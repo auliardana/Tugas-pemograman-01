@@ -1,0 +1,124 @@
+import random
+import math
+from math import sin
+from math import cos
+
+#untuk membuat 1 kromosom
+def chromosome(panjangKromosom):
+    kromosom = []
+    for i in range(panjangKromosom):
+        kromosom.append(int(random.choice([0,1])))
+    return kromosom
+
+#untuk mengenerate populasi yaitu membuat banyak kromosom
+def genePopulation(banyakPopulasi, panjangKromosom):
+    populasi = []
+    for i in range(banyakPopulasi):
+        populasi.append(chromosome(panjangKromosom))
+    return populasi
+
+#untuk mengubah data biner dalam kromosome menjadi nilai x dan y
+def decKromosom(kromosom):
+    
+    batasAtas = 5 #batas atas x dan y sama yaitu 5
+    batasBawah = -5 #batas bawah x dan y sama yaitu -5
+    genX = 0
+    genY= 0
+    kuadratX = 0
+    kuadratY = 0
+    for i in range(len(kromosom)//2):
+         genX = genX + kromosom[i] * (2**(-(i+1)))
+         kuadratX = kuadratX + (2**(-(i+1)))
+    for i in range(len(kromosom)//2, len(kromosom)):
+         genY = genY + kromosom[i] * (2**(-(i+1)))
+         kuadratY = kuadratY + (2**(-(i+1)))
+    x = batasBawah + ((batasAtas - batasBawah)/kuadratX)*genX
+    y = batasBawah + ((batasAtas - batasBawah)/kuadratY)*genY
+    return x, y
+
+#memberikan nilai fitness pada setiap kromosom
+def geneFitness(populasi):
+    fitness = list()
+    for i in populasi:
+       x, y= decKromosom(i)
+       nilai = (((math.cos(x))+(math.sin(y)))**2)/((x**2)+(y**2))
+       fitness.append(nilai)
+    return fitness
+
+#mencari parent terbaik dalam 1/4 populasi
+def tournament(populasi, fitness, n):
+    idx_chrom = random.sample(range (n), round(n/4))
+    parent_candidate=[(fitness[idx_chrom[i]], populasi[idx_chrom[i]]) for i in range(round(n/4))]
+    grade = sorted(parent_candidate, key=lambda x: x[0], reverse=True)
+    parent = grade[0][1]
+    return parent
+
+#mengubah kromosom dengan membelah kromosom dan menukarnya
+def crossover(parent1, parent2, pc):
+    if random.random()<pc:
+        #TPA : titik potong awal
+        #TPAK: titik potong akhir
+        TPA = random.randint(0, len(parent1)//2)
+        TPAK = random.randint((len(parent1)//2)+1, len(parent1))
+        parent1[TPA:TPAK] = parent2[TPA:TPAK]
+        parent2[TPA:TPAK] = parent1[TPA:TPAK]
+    return parent1, parent2
+
+#mengubah sebagian nilai gen sesuai dengan Pm
+def mutasiGen(kromosom, pm):
+    for i in range(len(kromosom)):
+        if pm > random.random():
+            if kromosom[i] == 0:
+                kromosom[i] = 1
+            else:
+                kromosom[i] = 0
+    return kromosom
+
+def elitisme(populasi, fitness):
+    kromosomBaru = [(fitness[i], populasi[i]) for i in range(len(populasi))]
+    grade = sorted(kromosomBaru, key=lambda x: x[0])
+    return [grade[0][1]]
+    
+def regeneration(popBaru, populasi, fitness, banyakPopulasi, pc, pm):
+
+   	while(len(popBaru) < banyakPopulasi):
+
+           parent1 = tournament(populasi, fitness, banyakPopulasi)
+           parent2 = tournament(populasi, fitness, banyakPopulasi)
+           parent1 = list(parent1)
+           parent2 = list(parent2)
+           child1, child2 = crossover(parent1, parent2, pc)
+           child1 = mutasiGen(child1, pm)
+           child2 = mutasiGen(child2, pm)
+           popBaru.extend([child1, child2])
+
+
+
+#========================== Main code =======================================
+panjangKromosom=22 #panjang 1 kromosom, yaitu 22 gen
+banyakPopulasi=100 #banyaknya kromosom, yaitu 100
+pm=0.1
+pc=0.7
+generasi = 0 #banyaknya generasi/keturunan
+populasi=genePopulation(banyakPopulasi, panjangKromosom)
+fitness=geneFitness(populasi)
+
+
+for i in range(12000): 
+    popBaru = elitisme(populasi, fitness)
+    regeneration(popBaru, populasi, fitness, banyakPopulasi, pc, pm)
+    populasi = popBaru
+    generasi += 1
+    print("Generasi : ", generasi, "\n")
+    fitness = geneFitness(populasi)
+
+print("\n")
+print("==================================================================")
+populasi_akhir=populasi
+fitnes_akhir=geneFitness(populasi_akhir)
+idx_min=fitness.index(min(fitness))
+print("ini nilai fitness terkecil : ",fitness[idx_min])
+print("ini isi kromosom : ", populasi[0])
+nilaiXY = decKromosom(populasi[idx_min])
+print("nilai x dan y :",nilaiXY)
+print("==================================================================")
